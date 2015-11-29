@@ -1,13 +1,19 @@
 package Weka_Train_Test_File_3_In_1;
 import java.io.BufferedReader;
+import java.io.FileDescriptor;
+import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.util.Random;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
 import weka.classifiers.functions.LibSVM;
-import weka.classifiers.lazy.IBk;
+import weka.classifiers.lazy.IBk; // KNN
 import weka.classifiers.trees.J48;
 import weka.core.Instances;
+import weka.core.SelectedTag;
 
 public class Weka_Train_Test_File_3_In_1 {
 
@@ -18,10 +24,11 @@ public class Weka_Train_Test_File_3_In_1 {
         Instances dataorg = new Instances(reader);
         reader.close();
 
-        // Chia lam 3 doan
+        // Giu bien trung binh
         double sumUAC_DTree=0.0;
         double sumUAC_KNN=0.0;
         double sumUAC_libSVM=0.0;
+        // Chia lam 3 doan
         int percent=3;
         for (int dem=0; dem<3; dem++){
         Instances train = dataorg.trainCV(percent, dem);
@@ -96,6 +103,11 @@ public class Weka_Train_Test_File_3_In_1 {
             cNumber = cNumber++;
         // kernel type from 0-3
         for (int j = 2; j <= 3; j++) {
+            // Khoa lenh in cua libSVM
+            System.setOut(new PrintStream(new OutputStream() {
+                @Override public void write(int b) throws IOException {}
+            }));
+
             typeOfKernelFunction = j;
             seed = i * j;
             Evaluation eval = new Evaluation(train);
@@ -106,8 +118,9 @@ public class Weka_Train_Test_File_3_In_1 {
             svmoptions[2] = "-C";
             svmoptions[3] = String.valueOf(cNumber);
             svmoptions[4] = "-H";
-            svmoptions[5] = "0";
+            svmoptions[5] = "0";           
             LibSVM svm = new LibSVM();
+
             svm.setOptions(svmoptions);
             eval.crossValidateModel(svm, train, folds, new Random(seed));
             if (maxUAC_SVM < eval.weightedAreaUnderROC()) {
@@ -118,7 +131,8 @@ public class Weka_Train_Test_File_3_In_1 {
         }
         }
 		// Test with best value for SVM
-		// option for SVM
+		// option for SVM  
+//            System.setout(new PrintStream());
             maxUAC_SVM=0;
             String[] optionssvm = new String[6];
             optionssvm[0] = "-K";
@@ -134,7 +148,10 @@ public class Weka_Train_Test_File_3_In_1 {
             Evaluation evalSVM = new Evaluation(dataorg);                
             evalSVM.evaluateModel(bestSVM, test);
             sumUAC_libSVM=sumUAC_libSVM + evalSVM.weightedAreaUnderROC();
-                    
+            
+            // Cho phep in cac ket qua nguoi dung can    
+            System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
+            
             System.out.println("Found kernel: " + bestTypeOfKernelFunction + " C: "	+ bestCNumber);
             System.out.println(evalSVM.toClassDetailsString("=== Class detail ==="));
             System.out.println(evalSVM.toSummaryString("=== Summary ===", false));
